@@ -39,6 +39,16 @@ export function formatMonthYear(isoDate?: string | null): string {
 }
 
 /**
+ * Formata uma data ISO (YYYY-MM-DD) para "DD/MM/AAAA".
+ */
+export function formatDateBR(isoDate?: string | null): string {
+  if (!isoDate) return '—';
+  const parts = isoDate.split('T')[0].split('-');
+  if (parts.length !== 3) return isoDate;
+  return `${parts[2]}/${parts[1]}/${parts[0]}`;
+}
+
+/**
  * Formata o período de vigência entre dataInicio e dataFim.
  */
 export function formatVigencia(dataInicio?: string | null, dataFim?: string | null): string {
