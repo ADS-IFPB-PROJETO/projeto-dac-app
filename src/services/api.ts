@@ -54,3 +54,76 @@ export async function listarProjetos(token?: string): Promise<PageResponse<Proje
 
   return response.data;
 }
+
+export type StatusProjeto = 'INICIANDO' | 'EM_EXECUCAO' | 'PAUSADO' | 'ENCERRADO';
+
+export interface ProjetoReqDto {
+  nome: string;
+  descricao: string;
+  financiador: string;
+  valor: number;
+  dataInicio: string; // ISO YYYY-MM-DD
+  dataFim: string; // ISO YYYY-MM-DD
+  statusProjeto: StatusProjeto;
+}
+
+export interface UsuarioResumoDto {
+  id: number;
+  nome: string;
+  email: string;
+}
+
+export type TipoItemOrcamento = 'COMPOSITE' | 'LEAF';
+
+export interface ItemOrcamentoReqDto {
+  rubrica: string;
+  descricao: string;
+  tipoItem: TipoItemOrcamento;
+  valorPrevisto: number | null;
+  parentId: number | null;
+}
+
+export interface ItemOrcamentoResDto {
+  idOrcamento: number;
+  rubrica: string;
+  descricao: string;
+  tipoItem: TipoItemOrcamento;
+  valorPrevisto: number;
+  valorExecutado: number;
+  valorDisponivel: number;
+  parentId: number | null;
+}
+
+export async function buscarProjetoPorId(id: string | number): Promise<ProjetoResDto> {
+  const response = await api.get<ProjetoResDto>(`/v1/projetos/${id}`);
+  return response.data;
+}
+
+export async function cadastrarProjeto(dto: ProjetoReqDto): Promise<void> {
+  await api.post('/v1/projetos/cadastro', dto);
+}
+
+export async function atualizarProjeto(
+  id: string | number,
+  dto: ProjetoReqDto
+): Promise<ProjetoResDto> {
+  const response = await api.put<ProjetoResDto>(`/v1/projetos/${id}/atualizar`, dto);
+  return response.data;
+}
+
+export async function listarUsuarios(): Promise<UsuarioResumoDto[]> {
+  const response = await api.get<UsuarioResumoDto[]>('/v1/usuarios');
+  return response.data;
+}
+
+export async function criarItemOrcamento(
+  idProjeto: number | string,
+  dto: ItemOrcamentoReqDto
+): Promise<ItemOrcamentoResDto> {
+  const response = await api.post<ItemOrcamentoResDto>(
+    `/v1/projetos/${idProjeto}/itens-orcamento`,
+    dto
+  );
+  return response.data;
+}
+
