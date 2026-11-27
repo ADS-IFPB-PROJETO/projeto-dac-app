@@ -1,6 +1,7 @@
 import React from 'react';
-import { Search, Bell, PieChart } from 'lucide-react';
+import { Search, Bell, PieChart, LogOut } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+import { api } from '@/services/api';
 
 interface TopbarProps {
   userName?: string;
@@ -10,11 +11,35 @@ interface TopbarProps {
   onPressNotifications?: () => void;
 }
 
+function getUserNameFromToken(): string | null {
+  if (typeof window === 'undefined') return null;
+  const token = localStorage.getItem('@orca:token');
+  if (!token) return null;
+  try {
+    const parts = token.split('.');
+    if (parts.length < 2) return null;
+    const base64 = parts[1].replace(/-/g, '+').replace(/_/g, '/');
+    const json = decodeURIComponent(
+      atob(base64)
+        .split('')
+        .map((c) => `%${`00${c.charCodeAt(0).toString(16)}`.slice(-2)}`)
+        .join('')
+    );
+    const payload = JSON.parse(json) as { nome?: string; name?: string; sub?: string };
+    if (payload.nome) return payload.nome;
+    if (payload.name) return payload.name;
+    if (payload.sub) return payload.sub.split('@')[0];
+    return null;
+  } catch {
+    return null;
+  }
+}
+
 /**
  * Barra superior global do ORCA (64px, fundo #0F273D).
  */
 export function Topbar({
-  userName = 'Usuário',
+  userName,
   searchQuery = '',
   onSearchChange,
   onPressProfile,
@@ -22,12 +47,25 @@ export function Topbar({
 }: TopbarProps) {
   const navigate = useNavigate();
 
-  const initials = userName
+  const resolvedName = getUserNameFromToken() || userName || 'Usuário';
+
+  const initials = resolvedName
     .split(' ')
     .filter(Boolean)
     .slice(0, 2)
     .map((part) => part[0]?.toUpperCase())
     .join('');
+
+  async function handleLogout() {
+    try {
+      await api.post('/v1/auth/logout');
+    } catch {
+      // Ignora falha de rede no logout e limpa a sessão local
+    } finally {
+      localStorage.removeItem('@orca:token');
+      navigate('/login', { replace: true });
+    }
+  }
 
   return (
     <header className="h-16 bg-[#0F273D] border-b border-white/10 px-5 sticky top-0 z-40 flex items-center">
@@ -81,12 +119,22 @@ export function Topbar({
             </div>
             <div className="hidden sm:block">
               <span className="text-white text-sm font-medium block leading-tight">
-                Olá, {userName.split(' ')[0]}
+                Olá, {resolvedName.split(' ')[0]}
               </span>
               <span className="text-[#748598] text-xs block leading-tight">
                 Meu Perfil
               </span>
             </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={handleLogout}
+            title="Sair da conta"
+            className="flex items-center gap-1.5 px-2.5 py-1.5 text-xs font-medium text-white/80 hover:text-white hover:bg-white/10 rounded-lg transition-colors cursor-pointer"
+          >
+            <LogOut size={16} strokeWidth={1.75} />
+            <span className="hidden md:inline">Sair</span>
           </button>
         </div>
       </div>
